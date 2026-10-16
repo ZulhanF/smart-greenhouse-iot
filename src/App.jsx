@@ -36,7 +36,7 @@ export default function App() {
   const [soilMoisture, setSoilMoisture] = useState(62);
   const [humidity, setHumidity] = useState(74);
 
-  const [ventAngle, setVentAngle] = useState(25);
+  const [ventOpenPercent, setVentOpenPercent] = useState(40);
   const [pumpActive, setPumpActive] = useState(false);
   const [autoMode, setAutoMode] = useState(true);
   const [feedbackSound, setFeedbackSound] = useState(true);
@@ -46,7 +46,7 @@ export default function App() {
   useEffect(() => {
     const timer = setInterval(() => {
       setTemperature(prev => {
-        const cooling = (ventAngle / 90) * 0.15;
+        const cooling = (ventOpenPercent / 100) * 0.18;
         const drift = (Math.random() - 0.48) * 0.1;
         const next = Math.max(18, Math.min(38, prev - cooling + drift));
         return parseFloat(next.toFixed(1));
@@ -54,7 +54,7 @@ export default function App() {
 
       setSoilMoisture(prev => {
         if (pumpActive) {
-          return Math.min(95, prev + 2);
+          return Math.min(95, prev + 2.5);
         }
         const dryRate = 0.05;
         return Math.max(20, parseFloat((prev - dryRate).toFixed(1)));
@@ -67,7 +67,7 @@ export default function App() {
     }, 2500);
 
     return () => clearInterval(timer);
-  }, [ventAngle, pumpActive]);
+  }, [ventOpenPercent, pumpActive]);
 
   // Tactile audio feedback
   const playTactileFeedback = (freq = 420, type = 'sine') => {
@@ -100,16 +100,16 @@ export default function App() {
     playTactileFeedback(380, 'triangle');
     setPumpActive(prev => {
       const next = !prev;
-      setLastAction(next ? 'Sub-irrigation pump activated (12V Relay ON)' : 'Pump cycle closed');
+      setLastAction(next ? 'Micro-irrigation pump ACTIVE (Flow 100%)' : 'Pump flow terminated');
       return next;
     });
   };
 
   const handleVentChange = (e) => {
     const val = parseInt(e.target.value, 10);
-    setVentAngle(val);
-    playTactileFeedback(val > ventAngle ? 480 : 320, 'sine');
-    setLastAction(`Servo vent position adjusted to ${val}°`);
+    setVentOpenPercent(val);
+    playTactileFeedback(val > ventOpenPercent ? 480 : 320, 'sine');
+    setLastAction(`Sliding vent position adjusted to ${val}% open`);
   };
 
   return (
@@ -184,7 +184,7 @@ export default function App() {
                   
                   <Float speed={1.1} rotationIntensity={0.12} floatIntensity={0.15}>
                     <GreenhouseModel 
-                      ventAngle={ventAngle} 
+                      ventOpenPercent={ventOpenPercent} 
                       pumpActive={pumpActive} 
                       soilMoisture={soilMoisture} 
                     />
@@ -207,7 +207,7 @@ export default function App() {
                 <span className="truncate max-w-[200px] sm:max-w-xs">{lastAction}</span>
               </div>
               <div className="text-[11px] font-mono text-[#5b6e5d]">
-                VENT: {ventAngle}° | FLOW: {pumpActive ? 'ACTIVE' : 'IDLE'}
+                SLIDING VENT: {ventOpenPercent}% | FLOW: {pumpActive ? 'ACTIVE' : 'IDLE'}
               </div>
             </div>
           </div>
@@ -299,32 +299,32 @@ export default function App() {
               </span>
             </div>
 
-            {/* Servo Ventilation */}
+            {/* Servo Sliding Ventilation */}
             <div className="flex flex-col gap-2">
               <div className="flex items-center justify-between text-xs">
                 <span className="text-[#a4b5a3] font-medium flex items-center gap-2 text-xs">
                   <SunMedium className="w-3.5 h-3.5 text-[#c29e64]" />
-                  Servo Roof Ventilation Angle
+                  Sliding Roof Ventilation (Aperture)
                 </span>
                 <span className="font-mono text-[#e5eae3] bg-[#151c16] px-2 py-0.5 rounded border border-[#263328] text-xs">
-                  {ventAngle}° / 90°
+                  {ventOpenPercent}% OPEN
                 </span>
               </div>
 
               <input
                 type="range"
                 min="0"
-                max="90"
+                max="100"
                 step="5"
-                value={ventAngle}
+                value={ventOpenPercent}
                 onChange={handleVentChange}
                 className="w-full h-2 bg-[#171f18] rounded-lg appearance-none cursor-pointer accent-[#769e7a] hover:accent-[#94be98] transition-all"
               />
 
               <div className="flex justify-between text-[10px] font-mono text-[#526354]">
-                <span>0° (Sealed)</span>
-                <span>45° (Mid-Flow)</span>
-                <span>90° (Full Purge)</span>
+                <span>0% (Closed)</span>
+                <span>50% (Half Aperture)</span>
+                <span>100% (Full Vent)</span>
               </div>
             </div>
 
