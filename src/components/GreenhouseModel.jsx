@@ -1,225 +1,242 @@
-import React, { useRef } from 'react';
+import React, { useRef, useMemo } from 'react';
 import { useFrame } from '@react-three/fiber';
-import { RoundedBox } from '@react-three/drei';
 import * as THREE from 'three';
 
 export function GreenhouseModel({ ventAngle = 0, pumpActive = false, soilMoisture = 65 }) {
-  const leftRoofRef = useRef();
-  const rightRoofRef = useRef();
-  const waterParticlesRef = useRef();
+  const roofHatchRef = useRef();
+  const waterFlowRef = useRef();
 
-  // Smooth roof opening animation based on servo angle (0 - 90 deg)
-  useFrame(() => {
-    const targetAngle = (ventAngle * Math.PI) / 180;
-    if (leftRoofRef.current) {
-      leftRoofRef.current.rotation.z = THREE.MathUtils.lerp(
-        leftRoofRef.current.rotation.z,
-        -targetAngle * 0.45,
-        0.08
+  // Optimized lightweight materials shared across meshes
+  const materials = useMemo(() => {
+    return {
+      woodBase: new THREE.MeshStandardMaterial({
+        color: '#c29d6b',
+        roughness: 0.65,
+        metalness: 0.05,
+      }),
+      darkFrame: new THREE.MeshStandardMaterial({
+        color: '#1a1d1b',
+        roughness: 0.4,
+        metalness: 0.6,
+      }),
+      frostedGlass: new THREE.MeshStandardMaterial({
+        color: '#d4e8de',
+        transparent: true,
+        opacity: 0.38,
+        roughness: 0.25,
+        metalness: 0.1,
+        depthWrite: false,
+        side: THREE.DoubleSide,
+      }),
+      brassServo: new THREE.MeshStandardMaterial({
+        color: '#d4af37',
+        roughness: 0.35,
+        metalness: 0.85,
+      }),
+      stemMat: new THREE.MeshStandardMaterial({
+        color: '#345233',
+        roughness: 0.7,
+      }),
+      leafMat: new THREE.MeshStandardMaterial({
+        color: '#527c52',
+        roughness: 0.5,
+        side: THREE.DoubleSide,
+      }),
+      irrigationPipe: new THREE.MeshStandardMaterial({
+        color: '#2d3330',
+        roughness: 0.3,
+        metalness: 0.8,
+      }),
+      waterDrop: new THREE.MeshBasicMaterial({
+        color: '#7be3ff',
+        transparent: true,
+        opacity: 0.8,
+      }),
+    };
+  }, []);
+
+  // Frame animation loop
+  useFrame((state, delta) => {
+    // Precise hinge rotation for the ventilation hatch
+    // Convert 0°-90° to negative radian tilt
+    const targetRad = -(ventAngle * Math.PI) / 180 * 0.75;
+    if (roofHatchRef.current) {
+      roofHatchRef.current.rotation.x = THREE.MathUtils.damp(
+        roofHatchRef.current.rotation.x,
+        targetRad,
+        7,
+        delta
       );
     }
-    if (rightRoofRef.current) {
-      rightRoofRef.current.rotation.z = THREE.MathUtils.lerp(
-        rightRoofRef.current.rotation.z,
-        targetAngle * 0.45,
-        0.08
-      );
-    }
 
-    // Water particles vibration/pulsing when pump is on
-    if (waterParticlesRef.current && pumpActive) {
-      waterParticlesRef.current.position.y = 0.4 + Math.sin(Date.now() * 0.015) * 0.04;
+    // Dynamic water droplets pulse when irrigation is running
+    if (waterFlowRef.current && pumpActive) {
+      waterFlowRef.current.position.y = 0.52 + Math.sin(state.clock.elapsedTime * 8) * 0.03;
     }
   });
 
-  // Moisture alters soil color: dry = light warm terracotta/sand, wet = rich deep earthy loam
-  const soilColor = soilMoisture < 40 ? '#8c7059' : soilMoisture > 70 ? '#261b14' : '#4a382c';
+  // Dynamic soil color
+  const soilColor = soilMoisture < 40 ? '#7a604c' : soilMoisture > 70 ? '#211710' : '#3d2e23';
+
+  // Greenhouse dimensions
+  const W = 3.0; // width (X)
+  const D = 2.0; // depth (Z)
+  const wallH = 1.3; // wall height
+  const baseH = 0.4; // planter base height
+  const ridgeH = 2.3; // roof peak
 
   return (
     <group position={[0, -0.6, 0]}>
-      {/* Wooden planter base (Japandi Oak / Teak) */}
-      <RoundedBox args={[3.2, 0.5, 2.2]} radius={0.06} smoothness={4} position={[0, 0.25, 0]}>
-        <meshStandardMaterial color="#c4a57b" roughness={0.7} metalness={0.1} />
-      </RoundedBox>
-
-      {/* Soil bed */}
-      <mesh position={[0, 0.48, 0]} rotation={[-Math.PI / 2, 0, 0]}>
-        <planeGeometry args={[2.95, 1.95]} />
-        <meshStandardMaterial color={soilColor} roughness={0.9} metalness={0.05} />
+      {/* 1. Oak Planter Bed (Base) */}
+      <mesh position={[0, baseH / 2, 0]} material={materials.woodBase}>
+        <boxGeometry args={[W + 0.2, baseH, D + 0.2]} />
       </mesh>
 
-      {/* Plants / Saplings inside */}
-      {[-0.8, 0, 0.8].map((x, i) => (
-        <group key={i} position={[x, 0.5, 0]}>
-          {/* Stem */}
-          <mesh position={[0, 0.2, 0]}>
-            <cylinderGeometry args={[0.02, 0.02, 0.4]} />
-            <meshStandardMaterial color="#3b5e3d" roughness={0.6} />
+      {/* Planter Rim Accent */}
+      <mesh position={[0, baseH + 0.02, 0]} material={materials.darkFrame}>
+        <boxGeometry args={[W + 0.24, 0.04, D + 0.24]} />
+      </mesh>
+
+      {/* 2. Soil Bed */}
+      <mesh position={[0, baseH + 0.03, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+        <planeGeometry args={[W - 0.1, D - 0.1]} />
+        <meshStandardMaterial color={soilColor} roughness={0.9} />
+      </mesh>
+
+      {/* 3. Flora & Seedlings */}
+      {[-0.8, 0, 0.8].map((xOffset, i) => (
+        <group key={i} position={[xOffset, baseH + 0.04, 0]}>
+          {/* Main Stem */}
+          <mesh position={[0, 0.22, 0]} material={materials.stemMat}>
+            <cylinderGeometry args={[0.02, 0.025, 0.44, 6]} />
           </mesh>
-          {/* Leaves */}
-          <mesh position={[0.07, 0.35, 0]} rotation={[0.2, 0, 0.4]}>
-            <sphereGeometry args={[0.12, 12, 8]} scale={[1.4, 0.3, 0.8]} />
-            <meshStandardMaterial color="#557c55" roughness={0.4} />
+          {/* Foliage billow */}
+          <mesh position={[0.08, 0.36, 0.05]} rotation={[0.3, 0.4, 0.2]} material={materials.leafMat}>
+            <coneGeometry args={[0.18, 0.35, 5]} />
           </mesh>
-          <mesh position={[-0.07, 0.3, 0]} rotation={[-0.2, 0, -0.4]}>
-            <sphereGeometry args={[0.1, 12, 8]} scale={[1.4, 0.3, 0.8]} />
-            <meshStandardMaterial color="#6a946a" roughness={0.4} />
-          </mesh>
-          <mesh position={[0, 0.42, 0.06]} rotation={[0.4, 0.5, 0]}>
-            <sphereGeometry args={[0.13, 12, 8]} scale={[1.2, 0.3, 0.9]} />
-            <meshStandardMaterial color="#446a44" roughness={0.4} />
+          <mesh position={[-0.08, 0.32, -0.05]} rotation={[-0.3, -0.4, -0.2]} material={materials.leafMat}>
+            <coneGeometry args={[0.16, 0.3, 5]} />
           </mesh>
         </group>
       ))}
 
-      {/* Water Droplets when pump is active */}
+      {/* 4. Irrigation Pipe & Droplets */}
+      <mesh position={[0, baseH + 0.22, 0]} rotation={[0, 0, Math.PI / 2]} material={materials.irrigationPipe}>
+        <cylinderGeometry args={[0.018, 0.018, W - 0.3, 8]} />
+      </mesh>
       {pumpActive && (
-        <group ref={waterParticlesRef} position={[0, 0.5, 0]}>
-          {[-0.7, -0.1, 0.2, 0.7].map((x, idx) => (
-            <mesh key={idx} position={[x, 0.15, (idx % 2 === 0 ? 0.3 : -0.3)]}>
-              <sphereGeometry args={[0.035, 8, 8]} />
-              <meshStandardMaterial color="#88d8f7" transparent opacity={0.85} roughness={0.1} />
+        <group ref={waterFlowRef} position={[0, baseH + 0.15, 0]}>
+          {[-0.7, -0.2, 0.3, 0.8].map((px, idx) => (
+            <mesh key={idx} position={[px, 0, (idx % 2 === 0 ? 0.25 : -0.25)]} material={materials.waterDrop}>
+              <sphereGeometry args={[0.03, 6, 6]} />
             </mesh>
           ))}
         </group>
       )}
 
-      {/* Minimal Matte Black Steel Framework */}
-      {/* Corner Pillars */}
+      {/* 5. Minimalist Structural Frame (Matte Black Aluminum) */}
+      {/* 4 Corner Posts */}
       {[
-        [-1.4, 1.25, -0.95],
-        [1.4, 1.25, -0.95],
-        [-1.4, 1.25, 0.95],
-        [1.4, 1.25, 0.95],
+        [-W / 2, baseH + wallH / 2, -D / 2],
+        [W / 2, baseH + wallH / 2, -D / 2],
+        [-W / 2, baseH + wallH / 2, D / 2],
+        [W / 2, baseH + wallH / 2, D / 2],
       ].map((pos, idx) => (
-        <mesh key={idx} position={pos}>
-          <boxGeometry args={[0.06, 1.5, 0.06]} />
-          <meshStandardMaterial color="#222524" roughness={0.4} metalness={0.8} />
+        <mesh key={idx} position={pos} material={materials.darkFrame}>
+          <boxGeometry args={[0.05, wallH, 0.05]} />
         </mesh>
       ))}
 
-      {/* Horizontal Upper Beams */}
-      <mesh position={[0, 2.0, -0.95]}>
-        <boxGeometry args={[2.86, 0.05, 0.05]} />
-        <meshStandardMaterial color="#222524" roughness={0.4} metalness={0.8} />
+      {/* Perimeter Wall Top Ring */}
+      <mesh position={[0, baseH + wallH, -D / 2]} material={materials.darkFrame}>
+        <boxGeometry args={[W + 0.05, 0.05, 0.05]} />
       </mesh>
-      <mesh position={[0, 2.0, 0.95]}>
-        <boxGeometry args={[2.86, 0.05, 0.05]} />
-        <meshStandardMaterial color="#222524" roughness={0.4} metalness={0.8} />
+      <mesh position={[0, baseH + wallH, D / 2]} material={materials.darkFrame}>
+        <boxGeometry args={[W + 0.05, 0.05, 0.05]} />
       </mesh>
-      <mesh position={[-1.4, 2.0, 0]}>
-        <boxGeometry args={[0.05, 0.05, 1.95]} />
-        <meshStandardMaterial color="#222524" roughness={0.4} metalness={0.8} />
+      <mesh position={[-W / 2, baseH + wallH, 0]} material={materials.darkFrame}>
+        <boxGeometry args={[0.05, 0.05, D + 0.05]} />
       </mesh>
-      <mesh position={[1.4, 2.0, 0]}>
-        <boxGeometry args={[0.05, 0.05, 1.95]} />
-        <meshStandardMaterial color="#222524" roughness={0.4} metalness={0.8} />
+      <mesh position={[W / 2, baseH + wallH, 0]} material={materials.darkFrame}>
+        <boxGeometry args={[0.05, 0.05, D + 0.05]} />
       </mesh>
 
-      {/* Glass Walls (Frosted, Nord-Japandi luxury) */}
-      {/* Back & Front Glass */}
-      <mesh position={[0, 1.25, -0.95]}>
-        <planeGeometry args={[2.76, 1.45]} />
-        <meshPhysicalMaterial
-          color="#d2e8dd"
-          transparent
-          opacity={0.35}
-          roughness={0.2}
-          transmission={0.85}
-          thickness={0.5}
-          side={THREE.DoubleSide}
-        />
-      </mesh>
-      <mesh position={[0, 1.25, 0.95]}>
-        <planeGeometry args={[2.76, 1.45]} />
-        <meshPhysicalMaterial
-          color="#d2e8dd"
-          transparent
-          opacity={0.35}
-          roughness={0.2}
-          transmission={0.85}
-          thickness={0.5}
-          side={THREE.DoubleSide}
-        />
-      </mesh>
-      {/* Left & Right Glass */}
-      <mesh position={[-1.4, 1.25, 0]} rotation={[0, Math.PI / 2, 0]}>
-        <planeGeometry args={[1.86, 1.45]} />
-        <meshPhysicalMaterial
-          color="#d2e8dd"
-          transparent
-          opacity={0.35}
-          roughness={0.2}
-          transmission={0.85}
-          thickness={0.5}
-          side={THREE.DoubleSide}
-        />
-      </mesh>
-      <mesh position={[1.4, 1.25, 0]} rotation={[0, Math.PI / 2, 0]}>
-        <planeGeometry args={[1.86, 1.45]} />
-        <meshPhysicalMaterial
-          color="#d2e8dd"
-          transparent
-          opacity={0.35}
-          roughness={0.2}
-          transmission={0.85}
-          thickness={0.5}
-          side={THREE.DoubleSide}
-        />
+      {/* Gable End Triangle Peaks (Left & Right) */}
+      {[-W / 2, W / 2].map((gx, idx) => (
+        <group key={idx} position={[gx, baseH + wallH, 0]}>
+          {/* Gable peak post */}
+          <mesh position={[0, (ridgeH - (baseH + wallH)) / 2, 0]} material={materials.darkFrame}>
+            <boxGeometry args={[0.04, ridgeH - (baseH + wallH), 0.04]} />
+          </mesh>
+        </group>
+      ))}
+
+      {/* Ridge Beam at top */}
+      <mesh position={[0, ridgeH, 0]} material={materials.darkFrame}>
+        <boxGeometry args={[W + 0.05, 0.05, 0.05]} />
       </mesh>
 
-      {/* Servo Controlled Roof Hatches (Pitch Roof) */}
-      {/* Central Ridge Beam */}
-      <mesh position={[0, 2.5, 0]}>
-        <boxGeometry args={[2.86, 0.06, 0.06]} />
-        <meshStandardMaterial color="#1a1c1b" metalness={0.9} roughness={0.3} />
+      {/* 6. Vertical Wall Glass Panels */}
+      {/* North / South Long Panes */}
+      <mesh position={[0, baseH + wallH / 2, -D / 2]} material={materials.frostedGlass}>
+        <planeGeometry args={[W - 0.05, wallH - 0.05]} />
+      </mesh>
+      <mesh position={[0, baseH + wallH / 2, D / 2]} material={materials.frostedGlass}>
+        <planeGeometry args={[W - 0.05, wallH - 0.05]} />
+      </mesh>
+      {/* East / West Short Panes */}
+      <mesh position={[-W / 2, baseH + wallH / 2, 0]} rotation={[0, Math.PI / 2, 0]} material={materials.frostedGlass}>
+        <planeGeometry args={[D - 0.05, wallH - 0.05]} />
+      </mesh>
+      <mesh position={[W / 2, baseH + wallH / 2, 0]} rotation={[0, Math.PI / 2, 0]} material={materials.frostedGlass}>
+        <planeGeometry args={[D - 0.05, wallH - 0.05]} />
       </mesh>
 
-      {/* Left Hatch Pivot Group */}
-      <group position={[0, 2.5, -0.95]} ref={leftRoofRef}>
-        <mesh position={[0, -0.25, 0.48]} rotation={[Math.PI / 6, 0, 0]}>
-          <boxGeometry args={[2.74, 0.04, 1.1]} />
-          <meshPhysicalMaterial
-            color="#d2e8dd"
-            transparent
-            opacity={0.4}
-            roughness={0.15}
-            transmission={0.8}
-            side={THREE.DoubleSide}
-          />
+      {/* 7. Pitched Roof Glazing */}
+      {/* Fixed Pitch Roof (South side: +Z) */}
+      <group position={[0, ridgeH, 0]}>
+        <mesh 
+          position={[0, -0.3, D / 4]} 
+          rotation={[-Math.atan2(ridgeH - (baseH + wallH), D / 2), 0, 0]} 
+          material={materials.frostedGlass}
+        >
+          <planeGeometry args={[W - 0.05, Math.hypot(ridgeH - (baseH + wallH), D / 2)]} />
         </mesh>
       </group>
 
-      {/* Right Hatch Pivot Group */}
-      <group position={[0, 2.5, 0.95]} ref={rightRoofRef}>
-        <mesh position={[0, -0.25, -0.48]} rotation={[-Math.PI / 6, 0, 0]}>
-          <boxGeometry args={[2.74, 0.04, 1.1]} />
-          <meshPhysicalMaterial
-            color="#d2e8dd"
-            transparent
-            opacity={0.4}
-            roughness={0.15}
-            transmission={0.8}
-            side={THREE.DoubleSide}
-          />
+      {/* 8. SERVO-ACTUATED ROOF VENTILATION HATCH (North side: -Z) */}
+      {/* Pivot Hinge mounted perfectly on the Ridge Beam */}
+      <group position={[0, ridgeH, 0]} ref={roofHatchRef}>
+        {/* The Glass Hatch Pane */}
+        <mesh 
+          position={[0, -0.3, -D / 4]} 
+          rotation={[Math.atan2(ridgeH - (baseH + wallH), D / 2), 0, 0]} 
+          material={materials.frostedGlass}
+        >
+          <planeGeometry args={[W - 0.08, Math.hypot(ridgeH - (baseH + wallH), D / 2)]} />
+        </mesh>
+
+        {/* Lightweight Hatch Metal Framing */}
+        <mesh 
+          position={[0, -0.3, -D / 4]} 
+          rotation={[Math.atan2(ridgeH - (baseH + wallH), D / 2), 0, 0]} 
+          material={materials.darkFrame}
+        >
+          <boxGeometry args={[W - 0.04, Math.hypot(ridgeH - (baseH + wallH), D / 2), 0.02]} />
         </mesh>
       </group>
 
-      {/* Decorative Brass Actuator Joints (Servo mount aesthetic) */}
-      <mesh position={[1.35, 2.48, 0]}>
-        <cylinderGeometry args={[0.04, 0.04, 0.2]} rotation={[0, 0, Math.PI / 2]} />
-        <meshStandardMaterial color="#d4af37" metalness={0.85} roughness={0.3} />
-      </mesh>
-      <mesh position={[-1.35, 2.48, 0]}>
-        <cylinderGeometry args={[0.04, 0.04, 0.2]} rotation={[0, 0, Math.PI / 2]} />
-        <meshStandardMaterial color="#d4af37" metalness={0.85} roughness={0.3} />
-      </mesh>
-
-      {/* Water Irrigation Pipe */}
-      <mesh position={[0, 0.6, 0]}>
-        <cylinderGeometry args={[0.02, 0.02, 2.6]} rotation={[0, 0, Math.PI / 2]} />
-        <meshStandardMaterial color="#333835" metalness={0.8} roughness={0.3} />
-      </mesh>
+      {/* 9. Brass Mechanical Actuator / Servo Assembly (Visualizing Real IoT Hardware) */}
+      <group position={[W / 2 - 0.25, ridgeH, 0]}>
+        {/* Servo Motor Casing */}
+        <mesh position={[0, -0.05, 0.08]} material={materials.darkFrame}>
+          <boxGeometry args={[0.12, 0.08, 0.12]} />
+        </mesh>
+        {/* Servo Horn & Brass Arm */}
+        <mesh position={[0, -0.05, 0]} material={materials.brassServo}>
+          <cylinderGeometry args={[0.02, 0.02, 0.15, 8]} />
+        </mesh>
+      </group>
     </group>
   );
 }
