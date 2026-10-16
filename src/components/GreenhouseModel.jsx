@@ -40,9 +40,25 @@ export function GreenhouseModel({ ventOpenPercent = 40, pumpActive = false, soil
 
     const vWest = clonedScene.getObjectByName('vent_west');
     const vEast = clonedScene.getObjectByName('vent_east');
+    const vWestHinge = clonedScene.getObjectByName('vent_west_hinge');
+    const vEastHinge = clonedScene.getObjectByName('vent_east_hinge');
 
     if (vWest) ventWestRef.current = vWest;
     if (vEast) ventEastRef.current = vEast;
+
+    // Calibrate vents angle to perfectly match roof slope:
+    // The rafter slope is -35.41 deg (-0.618 rad).
+    // The GLB asset had the hinge rested at only -6 deg, leaving a visible gap.
+    // Setting rotation.z = -0.618 rad seats both vents flush on the rafters!
+    const roofPitchRad = -0.618;
+    if (vWestHinge) {
+      vWestHinge.rotation.z = roofPitchRad;
+      vWestHinge.position.y = 3.20;
+    }
+    if (vEastHinge) {
+      vEastHinge.rotation.z = roofPitchRad;
+      vEastHinge.position.y = 3.20;
+    }
   }, [clonedScene]);
 
   // Frame loop: smooth sliding animation & water irrigation spray
