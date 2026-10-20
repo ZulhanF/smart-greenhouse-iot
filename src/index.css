@@ -2,11 +2,20 @@
 
 @layer base {
   body {
-    background-color: #0b0d0c;
-    color: #e5eae3;
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
     -webkit-font-smoothing: antialiased;
     overflow-x: hidden;
+    transition: background-color 0.25s ease, color 0.25s ease;
+  }
+
+  body.dark-theme {
+    background-color: #0a0d0c;
+    color: #e3e8e2;
+  }
+
+  body.light-theme {
+    background-color: #f4f7f4;
+    color: #19261b;
   }
 }
 
@@ -15,13 +24,28 @@
   width: 6px;
   height: 6px;
 }
+
+body.dark-theme ::-webkit-scrollbar-track,
 ::-webkit-scrollbar-track {
   background: #111412;
 }
+body.dark-theme ::-webkit-scrollbar-thumb,
 ::-webkit-scrollbar-thumb {
   background: #232c25;
   border-radius: 3px;
 }
+body.dark-theme ::-webkit-scrollbar-thumb:hover,
 ::-webkit-scrollbar-thumb:hover {
   background: #344337;
+}
+
+body.light-theme ::-webkit-scrollbar-track {
+  background: #eaf1eb;
+}
+body.light-theme ::-webkit-scrollbar-thumb {
+  background: #c2d4c5;
+  border-radius: 3px;
+}
+body.light-theme ::-webkit-scrollbar-thumb:hover {
+  background: #9ebb9f;
 }
