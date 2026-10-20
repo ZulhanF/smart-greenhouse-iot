@@ -529,60 +529,164 @@ export function GreenhouseModel({
       <GreenhouseFlora />
 
       {/* Modern High-Tech IoT Subsystem */}
-      {/* 1. Overhead Micro-Irrigation Pipe & LED Grow Fixtures */}
-      <group position={[0, 1.72, 0]}>
-        {/* Main Irrigation Rail */}
-        <mesh position={[0, 0, 0]} rotation={[0, 0, Math.PI / 2]}>
-          <cylinderGeometry args={[0.022, 0.022, 3.4, 16]} />
-          <meshStandardMaterial color="#1f2421" metalness={0.85} roughness={0.25} />
+      {/* 1. Complete IoT Irrigation Pump & Piping Network */}
+      {/* A. External Tandon Air Water Pump & Supply Line */}
+      <group position={[0, 0, 0]}>
+        {/* 12V DC Irrigation Pump Unit at Base of Water Butt / Tandon */}
+        <group position={[1.64, 0.22, 1.45]}>
+          {/* Pump Motor Housing */}
+          <mesh rotation={[0, 0, Math.PI / 2]}>
+            <cylinderGeometry args={[0.048, 0.048, 0.14, 16]} />
+            <meshStandardMaterial color="#1b2420" metalness={0.8} roughness={0.3} />
+          </mesh>
+          {/* Pump Mounting Bracket on Ground Plinth */}
+          <mesh position={[0, -0.045, 0]}>
+            <boxGeometry args={[0.13, 0.02, 0.08]} />
+            <meshStandardMaterial color="#2d3731" metalness={0.7} roughness={0.4} />
+          </mesh>
+          {/* Suction Pipe into Tandon / Water Butt */}
+          <mesh position={[0.12, 0, 0]} rotation={[0, 0, Math.PI / 2]}>
+            <cylinderGeometry args={[0.016, 0.016, 0.12, 12]} />
+            <meshStandardMaterial color="#1f2d26" metalness={0.6} roughness={0.4} />
+          </mesh>
+          {/* Pressure Relief Valve / Filter Cap */}
+          <mesh position={[-0.04, 0.05, 0]}>
+            <cylinderGeometry args={[0.02, 0.02, 0.04, 12]} />
+            <meshStandardMaterial color="#c49746" metalness={0.9} roughness={0.2} />
+          </mesh>
+          {/* Pump Active LED Status Light */}
+          <mesh position={[-0.06, 0.03, 0.03]}>
+            <sphereGeometry args={[0.012, 8, 8]} />
+            <meshStandardMaterial 
+              color={pumpActive ? '#00f0ff' : '#4a5550'} 
+              emissive={pumpActive ? '#00d2ff' : '#111815'}
+              emissiveIntensity={pumpActive ? 3.0 : 0.2}
+            />
+          </mesh>
+          {pumpActive && (
+            <pointLight color="#38bdf8" intensity={2.5} distance={0.8} position={[-0.08, 0.06, 0.05]} />
+          )}
+        </group>
+
+        {/* Vertical Supply Riser Pipe (From Pump up to Greenhouse Eave Level Y = 1.72) */}
+        <mesh position={[1.56, 0.97, 1.45]}>
+          <cylinderGeometry args={[0.015, 0.015, 1.50, 16]} />
+          <meshStandardMaterial color="#23352b" metalness={0.75} roughness={0.3} />
+        </mesh>
+        {/* Animated Water Glow in Supply Riser when Pump is Active */}
+        {pumpActive && (
+          <mesh position={[1.56, 0.97, 1.45]}>
+            <cylinderGeometry args={[0.017, 0.017, 1.48, 16]} />
+            <meshStandardMaterial 
+              color="#38bdf8" 
+              emissive="#0284c7" 
+              emissiveIntensity={0.65} 
+              transparent 
+              opacity={0.55} 
+            />
+          </mesh>
+        )}
+
+        {/* 90-Degree Elbow Fitting Outside Wall */}
+        <mesh position={[1.56, 1.72, 1.45]}>
+          <sphereGeometry args={[0.022, 12, 12]} />
+          <meshStandardMaterial color="#1a231e" metalness={0.85} roughness={0.25} />
         </mesh>
 
-        {/* High-Efficacy Horticultural LED Luminaire Strip */}
-        <group ref={growLightBarRef} position={[0, 0.05, 0]}>
+        {/* Horizontal Bridge Pipe entering Greenhouse East Wall (X: 1.56 -> 0.0) */}
+        <mesh position={[0.78, 1.72, 1.45]} rotation={[0, 0, Math.PI / 2]}>
+          <cylinderGeometry args={[0.015, 0.015, 1.56, 16]} />
+          <meshStandardMaterial color="#23352b" metalness={0.75} roughness={0.3} />
+        </mesh>
+        {/* Wall Penetration Flange / Collar at Greenhouse Frame */}
+        <mesh position={[1.46, 1.72, 1.45]} rotation={[0, 0, Math.PI / 2]}>
+          <cylinderGeometry args={[0.028, 0.028, 0.03, 16]} />
+          <meshStandardMaterial color="#3a4740" metalness={0.9} roughness={0.2} />
+        </mesh>
+
+        {/* Central Overhead Manifold T-Junction Fitting */}
+        <mesh position={[0, 1.72, 1.45]}>
+          <sphereGeometry args={[0.024, 12, 12]} />
+          <meshStandardMaterial color="#1a231e" metalness={0.85} roughness={0.25} />
+        </mesh>
+      </group>
+
+      {/* B. Overhead Longitudinal Irrigation Spine & Cross Branches */}
+      <group position={[0, 1.72, 0]}>
+        {/* Central Longitudinal Irrigation Spine Rail (Running along Z from -1.45 to +1.45) */}
+        <mesh position={[0, 0, 0]} rotation={[Math.PI / 2, 0, 0]}>
+          <cylinderGeometry args={[0.018, 0.018, 2.9, 16]} />
+          <meshStandardMaterial color="#1f2923" metalness={0.85} roughness={0.25} />
+        </mesh>
+
+        {/* High-Efficacy Horticultural LED Luminaire Strip (Mounted above Central Spine) */}
+        <group ref={growLightBarRef} position={[0, 0.035, 0]}>
           {/* LED Housing Bar */}
           <mesh position={[0, 0, 0]}>
-            <boxGeometry args={[0.06, 0.03, 3.2]} />
-            <meshStandardMaterial color="#2a332d" metalness={0.9} roughness={0.2} />
+            <boxGeometry args={[0.06, 0.025, 2.85]} />
+            <meshStandardMaterial color="#252f28" metalness={0.9} roughness={0.2} />
           </mesh>
-          {/* Emissive Photonic Strip (Photosynthetic Active Radiation: Magenta / Warm Sun) */}
-          <mesh position={[0, -0.016, 0]}>
-            <boxGeometry args={[0.045, 0.005, 3.1]} />
+          {/* Emissive Photonic Strip (Photosynthetic Active Radiation) */}
+          <mesh position={[0, -0.014, 0]}>
+            <boxGeometry args={[0.045, 0.005, 2.8]} />
             <meshStandardMaterial color="#ffe8d1" emissive="#ffaa66" emissiveIntensity={1.4} />
           </mesh>
           {/* Soft Downward Canopy Fill Light */}
-          <pointLight position={[0, -0.18, 0]} intensity={theme === 'light' ? 1.6 : 2.4} distance={3.4} color="#ffe2b8" />
+          <pointLight position={[0, -0.15, 0]} intensity={theme === 'light' ? 1.6 : 2.4} distance={3.4} color="#ffe2b8" />
         </group>
 
         {/* Ambient interior greenhouse illumination for vivid 3D depth */}
         <pointLight position={[0, -0.65, 0]} intensity={theme === 'light' ? 0.9 : 1.4} distance={3.8} color="#ffdca8" />
 
-        {/* Brass Micro-Sprinkler Nozzles with active glow */}
-        {[-1.2, -0.6, 0, 0.6, 1.2].map((x, idx) => (
-          <group key={idx} position={[x, -0.035, 0]}>
-            <mesh>
-              <cylinderGeometry args={[0.016, 0.01, 0.055, 12]} />
-              <meshStandardMaterial color="#d4af37" metalness={0.95} roughness={0.15} />
+        {/* Lateral Distribution Cross-Arms & Brass Nozzles over Planter Beds */}
+        {[-1.2, -0.6, 0.0, 0.6, 1.2].map((zPos, idx) => (
+          <group key={zPos} position={[0, 0, zPos]}>
+            {/* Cross-arm Pipe (Branching from center X=0 outward to X=-0.95 and X=+0.95) */}
+            <mesh position={[0, 0, 0]} rotation={[0, 0, Math.PI / 2]}>
+              <cylinderGeometry args={[0.012, 0.012, 1.90, 12]} />
+              <meshStandardMaterial color="#223028" metalness={0.8} roughness={0.3} />
             </mesh>
-            {pumpActive && (
-              <pointLight color="#7ee8fa" intensity={2.0} distance={1.4} />
-            )}
+
+            {/* West Nozzle (Spraying directly onto West Planter Bed at X = -0.95) */}
+            <group position={[-0.95, -0.025, 0]}>
+              <mesh>
+                <cylinderGeometry args={[0.014, 0.008, 0.045, 12]} />
+                <meshStandardMaterial color="#d4af37" metalness={0.95} roughness={0.15} />
+              </mesh>
+              {pumpActive && (
+                <pointLight color="#7ee8fa" intensity={1.8} distance={1.2} position={[0, -0.05, 0]} />
+              )}
+            </group>
+
+            {/* East Nozzle (Spraying directly onto East Planter Bed at X = +0.95) */}
+            <group position={[0.95, -0.025, 0]}>
+              <mesh>
+                <cylinderGeometry args={[0.014, 0.008, 0.045, 12]} />
+                <meshStandardMaterial color="#d4af37" metalness={0.95} roughness={0.15} />
+              </mesh>
+              {pumpActive && (
+                <pointLight color="#7ee8fa" intensity={1.8} distance={1.2} position={[0, -0.05, 0]} />
+              )}
+            </group>
           </group>
         ))}
       </group>
 
-      {/* 2. Realistic Micro-Droplet Cascade (64 dynamic droplets) */}
+      {/* 2. Realistic Micro-Droplet Cascade (Targeting Left & Right Planter Beds directly) */}
       <group ref={waterFlowRef} position={[0, 0, 0]}>
         {Array.from({ length: 64 }).map((_, idx) => {
-          const x = -1.25 + (idx % 12) * 0.23 + (Math.sin(idx * 3) * 0.07);
-          const z = (Math.cos(idx * 1.8) * 0.75);
-          const offset = idx * 0.09;
+          const isWest = idx < 32;
+          const baseX = isWest ? -0.95 : 0.95;
+          const x = baseX + (Math.sin(idx * 2.3) * 0.12);
+          const z = -1.35 + ((idx % 16) / 15) * 2.7 + (Math.cos(idx * 1.7) * 0.06);
+          const offset = idx * 0.08;
           return (
             <mesh 
               key={idx} 
-              position={[x, 1.6, z]} 
+              position={[x, 1.68, z]} 
               userData={{ offset }}
             >
-              <sphereGeometry args={[0.034, 10, 10]} />
+              <sphereGeometry args={[0.03, 10, 10]} />
               <meshStandardMaterial 
                 color="#62e6ff" 
                 emissive="#00b4d8"
@@ -597,27 +701,43 @@ export function GreenhouseModel({
         })}
       </group>
 
-      {/* 3. Volumetric Fine Vapor Moisture Cloud */}
+      {/* 3. Volumetric Fine Vapor Moisture Cloud Over Planter Beds */}
       <group ref={mistGroupRef} position={[0, 0.72, 0]} visible={false}>
-        {[-0.85, 0, 0.85].map((mx, idx) => (
-          <mesh key={idx} position={[mx, 0, 0]}>
-            <cylinderGeometry args={[0.65, 0.45, 0.35, 16]} />
-            <meshStandardMaterial 
-              color="#b5f0ff" 
-              emissive="#7adbf0"
-              emissiveIntensity={0.25}
-              transparent 
-              opacity={0.32} 
-              roughness={0.95} 
-              depthWrite={false}
-            />
-          </mesh>
+        {[-0.95, 0.95].map((bedX, bIdx) => (
+          <group key={bIdx} position={[bedX, 0, 0]}>
+            {[-0.6, 0.6].map((mz, idx) => (
+              <mesh key={idx} position={[0, 0, mz]}>
+                <cylinderGeometry args={[0.38, 0.28, 0.32, 16]} />
+                <meshStandardMaterial 
+                  color="#b5f0ff" 
+                  emissive="#7adbf0"
+                  emissiveIntensity={0.25}
+                  transparent 
+                  opacity={0.28} 
+                  roughness={0.95} 
+                  depthWrite={false}
+                />
+              </mesh>
+            ))}
+          </group>
         ))}
       </group>
 
-      {/* 4. Rich Organic Loam Bed Floor */}
-      <mesh position={[0, 0.56, 0]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
-        <planeGeometry args={[2.55, 3.15]} />
+      {/* 4. Rich Organic Loam Bed Soil (Left & Right Planter Benches Only - Walkway is 100% Clear) */}
+      {/* West Planter Bed Soil */}
+      <mesh position={[-0.94, 0.56, 0]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
+        <planeGeometry args={[0.62, 3.0]} />
+        <meshStandardMaterial 
+          color={soilColor} 
+          roughness={pumpActive ? 0.35 : 0.88} 
+          metalness={0.03}
+          normalMap={textures.soilNormalTex}
+          normalScale={new THREE.Vector2(0.4, 0.4)}
+        />
+      </mesh>
+      {/* East Planter Bed Soil */}
+      <mesh position={[0.94, 0.56, 0]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
+        <planeGeometry args={[0.62, 3.0]} />
         <meshStandardMaterial 
           color={soilColor} 
           roughness={pumpActive ? 0.35 : 0.88} 
